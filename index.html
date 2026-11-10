@@ -1,0 +1,1841 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Clampon — Mould Clamping Pressure & Tonnage Calculator | Polyelastica</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & JetBrains Mono for industrial digital readouts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', ' system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            inputGreen: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              900: '#064e3b',
+            },
+            outputAmber: {
+              50: '#fffbeb',
+              100: '#fef3c7',
+              400: '#fbbf24',
+              500: '#f59e0b',
+              600: '#d97706',
+              900: '#78350f',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom industrial styling & touch ergonomics */
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+    /* Custom Range Slider for gloved hands */
+    input[type="range"].shop-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.2);
+      outline: none;
+    }
+    input[type="range"].shop-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #10b981;
+      border: 3px solid #ffffff;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+      transition: transform 0.12s ease;
+    }
+    input[type="range"].shop-slider::-webkit-slider-thumb:active {
+      transform: scale(1.18);
+    }
+    .hazard-stripe {
+      background-image: repeating-linear-gradient(
+        -45deg,
+        rgba(245, 158, 11, 0.12),
+        rgba(245, 158, 11, 0.12) 10px,
+        transparent 10px,
+        transparent 20px
+      );
+    }
+  </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950 transition-colors duration-200">
+
+  <!-- TOP INDUSTRIAL HEADER BAR -->
+  <header class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-lg">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2">
+      <!-- Brand Identity -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-amber-500 p-0.5 shadow-md shadow-emerald-500/10 flex items-center justify-center">
+          <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+            <i class="fa-solid fa-arrows-down-to-line text-amber-400 text-lg"></i>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-white">CLAMPON</h1>
+            <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-semibold">
+              Shop-Floor v1.0
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-none mt-0.5">
+            Polyelastica • Mould Clamping & Tonnage Engine
+          </p>
+        </div>
+      </div>
+
+      <!-- Global Controls: Pi Mode, Precision, Deploy Guide & Theme -->
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+        <!-- Pi Constant Toggle (3.14 Excel vs Math.PI) -->
+        <button id="piToggleBtn" onclick="togglePiConstant()" title="Switch between Excel Pi (3.14) and Standard Math.PI (3.14159...)"
+          class="px-2.5 py-1.5 rounded-lg text-xs font-mono font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition">
+          <span class="text-amber-400 font-bold">π</span>
+          <span id="piToggleLabel">3.14 (Excel)</span>
+        </button>
+
+        <!-- Decimal Precision Toggle -->
+        <button id="precisionToggleBtn" onclick="togglePrecision()" title="Toggle between 2 Decimal Places and Full Excel Precision"
+          class="px-2.5 py-1.5 rounded-lg text-xs font-mono font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-hashtag text-emerald-400 text-[11px]"></i>
+          <span id="precisionToggleLabel">.00 (2 Dec)</span>
+        </button>
+
+        <!-- Deployment & Play Store Guide Modal Trigger -->
+        <button onclick="openModal('deployModal')"
+          class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <span class="hidden sm:inline">Publish / Deploy</span>
+        </button>
+
+        <!-- High-Contrast Daylight / Dark Mode Toggle -->
+        <button id="themeToggleBtn" onclick="toggleTheme()" title="Switch Shop-Floor Lighting Theme"
+          class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 border border-slate-700 transition">
+          <i id="themeIcon" class="fa-solid fa-sun text-sm"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- NAVIGATION TABS (3 CORE MODES) -->
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 pt-1 pb-2 flex items-center justify-between gap-2 overflow-x-auto">
+      <div class="flex items-center gap-1.5 bg-slate-950/90 p-1 rounded-xl border border-slate-800 w-full sm:w-auto">
+        <button onclick="switchTab('calculator')" id="tab-calculator"
+          class="flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition bg-emerald-500 text-slate-950 shadow">
+          <i class="fa-solid fa-gauge-high"></i>
+          <span>Shop Calculator</span>
+        </button>
+        <button onclick="switchTab('compare')" id="tab-compare"
+          class="flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition text-slate-300 hover:text-white hover:bg-slate-800/60">
+          <i class="fa-solid fa-table-columns"></i>
+          <span>Excel Sheet View</span>
+        </button>
+        <button onclick="switchTab('reverse')" id="tab-reverse"
+          class="flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition text-slate-300 hover:text-white hover:bg-slate-800/60">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span>Reverse Target</span>
+        </button>
+      </div>
+
+      <!-- Color Legend Pill (Directly from Clampon.xlsx) -->
+      <div class="hidden lg:flex items-center gap-4 text-xs bg-slate-950/80 px-3.5 py-1.5 rounded-xl border border-slate-800">
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-sm bg-emerald-500 inline-block shadow-sm shadow-emerald-500/50"></span>
+          <span class="text-slate-300 font-medium">Green = Input Value</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-3 h-3 rounded-sm bg-amber-400 inline-block shadow-sm shadow-amber-400/50"></span>
+          <span class="text-slate-300 font-medium">Yellow = Formula Output</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN APPLICATION CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-6">
+
+    <!-- Mobile Legend Banner -->
+    <div class="flex lg:hidden items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-xs">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block"></span>
+        <span class="text-emerald-300 font-semibold">Green: Operator Input</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-sm bg-amber-400 inline-block"></span>
+        <span class="text-amber-300 font-semibold">Yellow: Formula Output</span>
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 1: STANDARD SHOP-FLOOR CALCULATOR (SINGLE MACHINE VIEW)          -->
+    <!-- ===================================================================== -->
+    <section id="view-calculator" class="space-y-5">
+
+      <!-- MACHINE PRESET BAR -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3 sm:p-4 shadow-md">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-industry text-emerald-400 text-sm"></i>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Select Hydraulic Machine Preset</span>
+          </div>
+          <button onclick="openModal('addMachineModal')"
+            class="text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-plus"></i>
+            <span>Add Machine</span>
+          </button>
+        </div>
+
+        <!-- Preset Pills Container -->
+        <div id="machinePresetsList" class="flex items-center gap-2 overflow-x-auto pb-1">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <!-- MAIN CALCULATOR GRID: GREEN INPUTS (LEFT) + YELLOW OUTPUTS (RIGHT) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+        <!-- LEFT COLUMN: GREEN OPERATOR INPUT CONTROLS (5 COLS) -->
+        <div class="lg:col-span-5 bg-slate-900/95 border-2 border-emerald-500/40 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4 relative overflow-hidden">
+          <div class="flex items-center justify-between border-b border-emerald-500/20 pb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="w-3.5 h-3.5 rounded bg-emerald-500 shadow shadow-emerald-500/50"></span>
+              <div>
+                <h2 class="text-sm sm:text-base font-extrabold text-white uppercase tracking-wide">Machine & Mould Inputs</h2>
+                <p class="text-[11px] text-emerald-400 font-medium">Green Cells • Tap, slide, or step values</p>
+              </div>
+            </div>
+            <button onclick="resetSingleCalculator()" title="Reset to Default FM1 (470mm)"
+              class="text-xs text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 transition flex items-center gap-1">
+              <i class="fa-solid fa-rotate-right text-[11px]"></i>
+              <span>Reset</span>
+            </button>
+          </div>
+
+          <!-- 1. Hydraulic Machine Name -->
+          <div class="bg-emerald-950/25 border border-emerald-500/30 rounded-xl p-3.5 space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="inpMachineName" class="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                Hydraulic Machine Name
+              </label>
+              <span class="text-[11px] font-mono text-emerald-400/80">ID / Tag</span>
+            </div>
+            <input id="inpMachineName" type="text" value="FM1" oninput="updateSingleCalculation()"
+              class="w-full bg-slate-950/90 border border-emerald-500/40 focus:border-emerald-400 rounded-xl px-3.5 py-2.5 text-base font-mono font-bold text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+          </div>
+
+          <!-- 2. Ram Diameter (mm) -->
+          <div class="bg-emerald-950/25 border border-emerald-500/30 rounded-xl p-3.5 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <label for="inpRamDia" class="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                Ram Diameter
+              </label>
+              <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Unit: mm</span>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="stepInput('inpRamDia', -10)"
+                class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-mono text-xs font-bold border border-slate-700 transition">-10</button>
+              <button type="button" onclick="stepInput('inpRamDia', -1)"
+                class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-mono text-xs font-bold border border-slate-700 transition">-1</button>
+              <input id="inpRamDia" type="number" step="any" min="10" max="2000" value="470" oninput="syncSlider('inpRamDia', 'sliderRamDia'); updateSingleCalculation()"
+                class="w-full text-center bg-slate-950 border-2 border-emerald-500/50 focus:border-emerald-400 rounded-xl py-2 px-2 text-xl font-mono font-extrabold text-emerald-300 focus:outline-none" />
+              <button type="button" onclick="stepInput('inpRamDia', 1)"
+                class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-mono text-xs font-bold border border-slate-700 transition">+1</button>
+              <button type="button" onclick="stepInput('inpRamDia', 10)"
+                class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-mono text-xs font-bold border border-slate-700 transition">+10</button>
+            </div>
+
+            <input id="sliderRamDia" type="range" min="100" max="800" step="5" value="470"
+              oninput="syncInputFromSlider('sliderRamDia', 'inpRamDia'); updateSingleCalculation()"
+              class="shop-slider" />
+
+            <!-- Quick Ram Presets -->
+            <div class="flex items-center justify-between gap-1 pt-0.5 flex-wrap">
+              <span class="text-[11px] text-slate-400">Quick Ram Ø:</span>
+              <div class="flex gap-1.5 flex-wrap">
+                <button type="button" onclick="setExactValue('inpRamDia', 200)" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-300 transition">200mm</button>
+                <button type="button" onclick="setExactValue('inpRamDia', 250)" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-300 transition">250mm</button>
+                <button type="button" onclick="setExactValue('inpRamDia', 350)" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-300 transition">350mm</button>
+                <button type="button" onclick="setExactValue('inpRamDia', 470)" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-300 transition">470mm</button>
+                <button type="button" onclick="setExactValue('inpRamDia', 550)" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-300 transition">550mm</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Hydraulic Pressure (Kg/cm²) -->
+          <div class="bg-emerald-950/25 border border-emerald-500/30 rounded-xl p-3.5 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <label for="inpHydPressure" class="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                Hydraulic Pressure
+              </label>
+              <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Unit: Kg/cm²</span>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="stepInput('inpHydPressure', -10)"
+                class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-mono text-xs font-bold border border-slate-700 transition">-10</button>
+              <button type="button" onclick="stepInput('inpHydPressure', -1)"
+                class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-mono text-xs font-bold border border-slate-700 transition">-1</button>
+              <input id="inpHydPressure" type="number" step="any" min="1" max="500" value="210" oninput="syncSlider('inpHydPressure', 'sliderHydPressure'); updateSingleCalculation()"
+                class="w-full text-center bg-slate-950 border-2 border-emerald-500/50 focus:border-emerald-400 rounded-xl py-2 px-2 text-xl font-mono font-extrabold text-emerald-300 focus:outline-none" />
+              <button type="button" onclick="stepInput('inpHydPressure', 1)"
+                class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-mono text-xs font-bold border border-slate-700 transition">+1</button>
+              <button type="button" onclick="stepInput('inpHydPressure', 10)"
+                class="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-mono text-xs font-bold border border-slate-700 transition">+10</button>
+            </div>
+
+            <input id="sliderHydPressure" type="range" min="50" max="300" step="5" value="210"
+              oninput="syncInputFromSlider('sliderHydPressure', 'inpHydPressure'); updateSingleCalculation()"
+              class="shop-slider" />
+
+            <!-- Quick Pressure Chips -->
+            <div class="flex items-center justify-between gap-1 pt-0.5 flex-wrap">
+              <span class="text-[11px] text-slate-400">Line Presets:</span>
+              <div class="flex gap-1.5 flex-wrap">
+                <button type="button" onclick="setExactValue('inpHydPressure', 150)" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-300 transition">150</button>
+                <button type="button" onclick="setExactValue('inpHydPressure', 180)" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-300 transition">180</button>
+                <button type="button" onclick="setExactValue('inpHydPressure', 200)" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-300 transition">200</button>
+                <button type="button" onclick="setExactValue('inpHydPressure', 210)" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-300 transition">210</button>
+                <button type="button" onclick="setExactValue('inpHydPressure', 240)" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-300 transition">240</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 & 5. Mould Plate Width & Length (mm) -->
+          <div class="bg-emerald-950/25 border border-emerald-500/30 rounded-xl p-3.5 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                Mould Plate Dimensions (W × L)
+              </span>
+              <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Unit: mm</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- Width -->
+              <div class="space-y-1.5">
+                <label for="inpMouldWidth" class="text-[11px] font-semibold text-slate-300 block">Mould Plate Width (mm)</label>
+                <div class="flex items-center gap-1">
+                  <button type="button" onclick="stepInput('inpMouldWidth', -25)"
+                    class="px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs font-bold border border-slate-700">-25</button>
+                  <input id="inpMouldWidth" type="number" step="any" min="50" max="3000" value="700" oninput="updateSingleCalculation()"
+                    class="w-full text-center bg-slate-950 border-2 border-emerald-500/50 focus:border-emerald-400 rounded-xl py-2 px-1 text-lg font-mono font-extrabold text-emerald-300 focus:outline-none" />
+                  <button type="button" onclick="stepInput('inpMouldWidth', 25)"
+                    class="px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs font-bold border border-slate-700">+25</button>
+                </div>
+              </div>
+
+              <!-- Length -->
+              <div class="space-y-1.5">
+                <label for="inpMouldLength" class="text-[11px] font-semibold text-slate-300 block">Mould Plate Length (mm)</label>
+                <div class="flex items-center gap-1">
+                  <button type="button" onclick="stepInput('inpMouldLength', -25)"
+                    class="px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs font-bold border border-slate-700">-25</button>
+                  <input id="inpMouldLength" type="number" step="any" min="50" max="3000" value="700" oninput="updateSingleCalculation()"
+                    class="w-full text-center bg-slate-950 border-2 border-emerald-500/50 focus:border-emerald-400 rounded-xl py-2 px-1 text-lg font-mono font-extrabold text-emerald-300 focus:outline-none" />
+                  <button type="button" onclick="stepInput('inpMouldLength', 25)"
+                    class="px-2.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs font-bold border border-slate-700">+25</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Standard Mould Size Quick Buttons -->
+            <div class="flex items-center justify-between gap-1 pt-1 flex-wrap">
+              <span class="text-[11px] text-slate-400">Standard Plates:</span>
+              <div class="flex gap-1.5 flex-wrap">
+                <button type="button" onclick="setMouldDimensions(500, 500)" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-300 transition">500×500</button>
+                <button type="button" onclick="setMouldDimensions(600, 600)" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-300 transition">600×600</button>
+                <button type="button" onclick="setMouldDimensions(700, 700)" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-300 transition">700×700</button>
+                <button type="button" onclick="setMouldDimensions(800, 800)" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-300 transition">800×800</button>
+                <button type="button" onclick="setMouldDimensions(1000, 1000)" class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-300 transition">1000×1000</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: YELLOW FORMULA OUTPUT DASHBOARD (7 COLS) -->
+        <div class="lg:col-span-7 space-y-4">
+
+          <div class="bg-slate-900/95 border-2 border-amber-500/45 rounded-2xl p-4 sm:p-5 shadow-xl space-y-5">
+            <!-- Output Header -->
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-amber-500/20 pb-3">
+              <div class="flex items-center gap-2.5">
+                <span class="w-3.5 h-3.5 rounded bg-amber-400 shadow shadow-amber-400/50"></span>
+                <div>
+                  <h2 class="text-sm sm:text-base font-extrabold text-white uppercase tracking-wide">
+                    Calculated Clamping Outputs
+                  </h2>
+                  <p class="text-[11px] text-amber-400 font-medium">
+                    Yellow Cells • Live formula evaluation (<span id="activeFormulaPiText">π = 3.14</span>)
+                  </p>
+                </div>
+              </div>
+
+              <!-- Action Buttons: Copy Summary & Log Reading -->
+              <div class="flex items-center gap-2">
+                <button onclick="saveToShiftHistory()"
+                  class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition">
+                  <i class="fa-solid fa-bookmark"></i>
+                  <span>Log Shift</span>
+                </button>
+                <button onclick="copyWhatsAppSummary()"
+                  class="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold flex items-center gap-1.5 shadow transition">
+                  <i class="fa-solid fa-share-nodes"></i>
+                  <span>Copy Report</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- HERO OUTPUT CARDS (PRESSURE ON MOULD & MACHINE TONNAGE) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+              <!-- HERO 1: PRESSURE ON MOULD (Kg/cm²) -->
+              <div class="bg-gradient-to-br from-amber-500/20 via-amber-950/30 to-slate-950 border-2 border-amber-400/60 rounded-2xl p-4 relative overflow-hidden shadow-lg">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-extrabold uppercase tracking-wider text-amber-300">
+                    Pressure on Mould
+                  </span>
+                  <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30">
+                    Kg/cm²
+                  </span>
+                </div>
+
+                <div class="my-2 flex items-baseline gap-2">
+                  <span id="outMouldPressure" class="text-3xl sm:text-4xl font-mono font-extrabold text-amber-300 tracking-tight">
+                    74.32
+                  </span>
+                  <span class="text-xs font-mono text-slate-400">Kg/cm²</span>
+                </div>
+
+                <!-- Exact Unrounded Sub-readout -->
+                <div class="text-[11px] font-mono text-slate-400 mb-3 flex items-center justify-between">
+                  <span>Exact: <strong id="outMouldPressureExact" class="text-slate-200">74.317071</strong></span>
+                  <span id="mouldPressureStatusBadge" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300">
+                    Optimal Clamping
+                  </span>
+                </div>
+
+                <!-- Visual Gauge Bar -->
+                <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden p-0.5">
+                  <div id="gaugeMouldPressure" class="h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 rounded-full transition-all duration-300" style="width: 62%;"></div>
+                </div>
+                <p class="text-[10px] font-mono text-slate-400 mt-2">
+                  Formula: (Machine Tonnage × 1000) ÷ Platen Area
+                </p>
+              </div>
+
+              <!-- HERO 2: MACHINE TONNAGE (Ton) -->
+              <div class="bg-gradient-to-br from-amber-500/15 via-amber-950/25 to-slate-950 border-2 border-amber-500/45 rounded-2xl p-4 relative overflow-hidden shadow-lg">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-extrabold uppercase tracking-wider text-amber-300">
+                    Machine Tonnage
+                  </span>
+                  <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 font-bold border border-amber-400/30">
+                    Metric Ton
+                  </span>
+                </div>
+
+                <div class="my-2 flex items-baseline gap-2">
+                  <span id="outTonnage" class="text-3xl sm:text-4xl font-mono font-extrabold text-white tracking-tight">
+                    364.15
+                  </span>
+                  <span class="text-xs font-mono text-amber-300 font-bold">Ton</span>
+                </div>
+
+                <!-- Exact Unrounded Sub-readout -->
+                <div class="text-[11px] font-mono text-slate-400 mb-3 flex items-center justify-between">
+                  <span>Exact: <strong id="outTonnageExact" class="text-slate-200">364.15365</strong></span>
+                  <span id="outForceKN" class="text-amber-300/90 font-semibold">3,571 kN</span>
+                </div>
+
+                <!-- Visual Gauge Bar -->
+                <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden p-0.5">
+                  <div id="gaugeTonnage" class="h-full bg-amber-400 rounded-full transition-all duration-300" style="width: 72%;"></div>
+                </div>
+                <p class="text-[10px] font-mono text-slate-400 mt-2">
+                  Formula: (Ram Area × Hydraulic Pressure) ÷ 1000
+                </p>
+              </div>
+
+            </div>
+
+            <!-- SECONDARY YELLOW FORMULA OUTPUTS (4-CARD GRID MATCHING EXCEL ROWS) -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+
+              <!-- Output 1: Ram Radius (mm) -->
+              <div class="bg-amber-950/20 border border-amber-500/35 rounded-xl p-3 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-[11px] text-amber-300/90 font-bold uppercase">
+                  <span>Ram Radius</span>
+                  <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15">mm</span>
+                </div>
+                <div id="outRamRadius" class="text-xl sm:text-2xl font-mono font-extrabold text-amber-200 my-1.5">
+                  235
+                </div>
+                <div class="text-[10px] font-mono text-slate-400 border-t border-slate-800/80 pt-1">
+                  = Dia ÷ 2
+                </div>
+              </div>
+
+              <!-- Output 2: Ram Area (cm²) -->
+              <div class="bg-amber-950/20 border border-amber-500/35 rounded-xl p-3 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-[11px] text-amber-300/90 font-bold uppercase">
+                  <span>Ram Area</span>
+                  <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15">cm²</span>
+                </div>
+                <div id="outRamArea" class="text-xl sm:text-2xl font-mono font-extrabold text-amber-200 my-1.5">
+                  1734.07
+                </div>
+                <div id="outRamAreaExactSub" class="text-[10px] font-mono text-slate-400 border-t border-slate-800/80 pt-1 truncate">
+                  = π × R² ÷ 100
+                </div>
+              </div>
+
+              <!-- Output 3: Hydraulic Pressure (PSI) -->
+              <div class="bg-amber-950/20 border border-amber-500/35 rounded-xl p-3 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-[11px] text-amber-300/90 font-bold uppercase">
+                  <span>Hyd. Pressure</span>
+                  <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15">PSI</span>
+                </div>
+                <div id="outHydPSI" class="text-xl sm:text-2xl font-mono font-extrabold text-amber-200 my-1.5">
+                  2986.91
+                </div>
+                <div class="text-[10px] font-mono text-slate-400 border-t border-slate-800/80 pt-1">
+                  = Kg/cm² × 14.2234
+                </div>
+              </div>
+
+              <!-- Output 4: Platen / Mould Area (cm²) -->
+              <div class="bg-amber-950/20 border border-amber-500/35 rounded-xl p-3 flex flex-col justify-between">
+                <div class="flex items-center justify-between text-[11px] text-amber-300/90 font-bold uppercase">
+                  <span>Platen Area</span>
+                  <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15">cm²</span>
+                </div>
+                <div id="outPlatenArea" class="text-xl sm:text-2xl font-mono font-extrabold text-amber-200 my-1.5">
+                  4900
+                </div>
+                <div class="text-[10px] font-mono text-slate-400 border-t border-slate-800/80 pt-1">
+                  = (W × L) ÷ 100
+                </div>
+              </div>
+
+            </div>
+
+            <!-- INTERACTIVE RAM-TO-MOULD FOOTPRINT VISUALIZER -->
+            <div class="bg-slate-950/90 border border-slate-800 rounded-xl p-3.5 flex flex-col sm:flex-row items-center gap-4">
+              <!-- Proportional SVG Footprint Graphic -->
+              <div class="w-36 h-36 flex-shrink-0 bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-center p-2 relative">
+                <svg id="footprintSvg" viewBox="0 0 160 160" class="w-full h-full">
+                  <!-- Grid lines -->
+                  <defs>
+                    <pattern id="smallGrid" width="16" height="16" patternUnits="userSpaceOnUse">
+                      <path d="M 16 0 L 0 0 0 16" fill="none" stroke="rgba(148,163,184,0.12)" stroke-width="1"/>
+                    </pattern>
+                  </defs>
+                  <rect width="160" height="160" fill="url(#smallGrid)" />
+                  <!-- Mould Plate Rectangle -->
+                  <rect id="svgMouldRect" x="25" y="25" width="110" height="110" rx="6"
+                    fill="rgba(245, 158, 11, 0.15)" stroke="#fbbf24" stroke-width="2.5" stroke-dasharray="4 2" />
+                  <!-- Hydraulic Ram Circle -->
+                  <circle id="svgRamCircle" cx="80" cy="80" r="37"
+                    fill="rgba(16, 185, 129, 0.28)" stroke="#10b981" stroke-width="2.5" />
+                  <!-- Center Crosshair -->
+                  <line x1="80" y1="72" x2="80" y2="88" stroke="#e2e8f0" stroke-width="1.5" />
+                  <line x1="72" y1="80" x2="88" y2="80" stroke="#e2e8f0" stroke-width="1.5" />
+                </svg>
+              </div>
+
+              <!-- Visualizer Legend & Area Ratio Breakdown -->
+              <div class="flex-1 space-y-2 text-xs w-full">
+                <div class="flex items-center justify-between">
+                  <span class="font-bold text-slate-200 uppercase tracking-wider">Ram vs. Mould Plate Geometry</span>
+                  <span id="areaRatioBadge" class="font-mono text-[11px] px-2 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700">
+                    Ram covers 35.4% of Mould
+                  </span>
+                </div>
+                <p class="text-slate-400 text-[11px] leading-relaxed">
+                  The green circle represents the <strong class="text-emerald-400">Hydraulic Ram Cylinder (<span id="vizRamText">Ø470 mm</span>)</strong> transferring force onto the amber <strong class="text-amber-300">Mould Plate (<span id="vizMouldText">700 × 700 mm</span>)</strong>.Because the mould area (<span id="vizPlatenAreaText">4,900 cm²</span>) is larger than the ram area (<span id="vizRamAreaText">1,734.07 cm²</span>), line pressure steps down proportionally.
+                </p>
+                <div class="grid grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
+                  <div class="bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-800">
+                    <span class="text-slate-400">Pressure Ratio:</span>
+                    <strong id="vizPressureStepRatio" class="text-emerald-400 ml-1">0.354× Line</strong>
+                  </div>
+                  <div class="bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-800">
+                    <span class="text-slate-400">Specific Load:</span>
+                    <strong id="vizMPaLoad" class="text-amber-300 ml-1">7.29 MPa</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- RECENT SHIFT LOGS / SAVED CALCULATIONS -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-md">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-list text-amber-400 text-sm"></i>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Saved Shift Calculations</h3>
+              </div>
+              <button onclick="clearShiftHistory()" class="text-[11px] text-slate-400 hover:text-rose-400 transition">
+                Clear History
+              </button>
+            </div>
+            <div id="shiftLogContainer" class="overflow-x-auto">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 2: SIDE-BY-SIDE EXCEL SHEET COMPARISON VIEW (Clampon.xlsx)       -->
+    <!-- ===================================================================== -->
+    <section id="view-compare" class="hidden space-y-5">
+
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-mono text-xs font-bold">
+                Clampon.xlsx
+              </span>
+              <h2 class="text-base sm:text-lg font-extrabold text-white">Side-by-Side Machine Comparison Sheet</h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">
+              Mirrors your exact Excel workbook comparing two hydraulic machines side by side. Edit any green cell to compare live.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button onclick="resetExcelComparison()"
+              class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-rotate-left text-emerald-400"></i>
+              <span>Restore Excel Defaults (470mm vs 250mm)</span>
+            </button>
+            <button onclick="copyExcelComparisonTable()"
+              class="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-extrabold flex items-center gap-1.5 shadow transition">
+              <i class="fa-solid fa-copy"></i>
+              <span>Copy Comparison</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- RESPONSIVE EXCEL TABLE -->
+        <div class="overflow-x-auto rounded-xl border border-slate-800">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-950 border-b border-slate-800 text-[11px] font-mono uppercase text-slate-400">
+                <th class="py-3 px-4">Parameter / Row</th>
+                <th class="py-3 px-3 text-center">Unit</th>
+                <th class="py-3 px-4 bg-slate-900/80 text-emerald-300 border-l border-slate-800">Machine Column A</th>
+                <th class="py-3 px-4 bg-slate-900/80 text-emerald-300 border-l border-slate-800">Machine Column B</th>
+                <th class="py-3 px-4 text-amber-300 border-l border-slate-800">Delta (A vs B)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/80 text-sm font-mono">
+
+              <!-- ROW 1: Hydraulic Machine Name (GREEN INPUT) -->
+              <tr class="bg-emerald-950/20">
+                <td class="py-3 px-4 font-sans font-bold text-emerald-300 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-sm bg-emerald-500 flex-shrink-0"></span>
+                  <span>Hydraulic Machine Name</span>
+                </td>
+                <td class="py-3 px-3 text-center text-xs text-slate-400">ID</td>
+                <td class="py-2.5 px-4 border-l border-slate-800">
+                  <input id="cmpNameA" type="text" value="FM1" oninput="updateComparisonView()"
+                    class="w-full bg-slate-950 border border-emerald-500/50 rounded-lg px-3 py-1.5 text-emerald-300 font-bold focus:outline-none focus:border-emerald-400" />
+                </td>
+                <td class="py-2.5 px-4 border-l border-slate-800">
+                  <input id="cmpNameB" type="text" value="FM1" oninput="updateComparisonView()"
+                    class="w-full bg-slate-950 border border-emerald-500/50 rounded-lg px-3 py-1.5 text-emerald-300 font-bold focus:outline-none focus:border-emerald-400" />
+                </td>
+                <td class="py-2.5 px-4 border-l border-slate-800 text-xs text-slate-400 font-sans">
+                  Input Tag
+                </td>
+              </tr>
+
+              <!-- ROW 2: Ram Diameter (GREEN INPUT) -->
+              <tr class="bg-emerald-950/20">
+                <td class="py-3 px-4 font-sans font-bold text-emerald-300 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-sm bg-emerald-500 flex-shrink-0"></span>
+                  <span>Ram Diameter</span>
+                </td>
+                <td class="py-3 px-3 text-center text-xs text-emerald-300 font-bold">mm</td>
+                <td class="py-2.5 px-4 border-l border-slate-800">
+                  <input id="cmpRamDiaA" type="number" step="any" value="470" oninput="updateComparisonView()"
+                    class="w-full bg-slate-950 border border-emerald-500/50 rounded-lg px-3 py-1.5 text-emerald-300 font-bold focus:outline-none focus:border-emerald-400" />
+                </td>
+                <td class="py-2.5 px-4 border-l border-slate-800">
+                  <input id="cmpRamDiaB" type="number" step="any" value="250" oninput="updateComparisonView()"
+                    class="w-full bg-slate-950 border border-emerald-500/50 rounded-lg px-3 py-1.5 text-emerald-300 font-bold focus:outline-none focus:border-emerald-400" />
+                </td>
+                <td id="cmpDeltaRamDia" class="py-2.5 px-4 border-l border-slate-800 text-xs text-slate-300">
+                  +220 mm
+                </td>
+              </tr>
+
+              <!-- ROW 3: Ram Radius (YELLOW OUTPUT) -->
+              <tr class="bg-amber-950/15">
+                <td class="py-3 px-4 font-sans font-bold text-amber-300 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-sm bg-amber-400 flex-shrink-0"></span>
+                  <span>Ram Radius</span>
+                </td>
+                <td class="py-3 px-3 text-center text-xs text-amber-300">mm</td>
+                <td id="cmpRamRadiusA" class="py-3 px-4 border-l border-slate-800 font-bold text-amber-200">235</td>
+                <td id="cmpRamRadiusB" class="py-3 px-4 border-l border-slate-800 font-bold text-amber-200">125</td>
+                <td id="cmpDeltaRamRadius" class="py-3 px-4 border-l border-slate-800 text-xs text-slate-400">= Dia / 2</td>
+              </tr>
+
+              <!-- ROW 4: Ram Area (YELLOW OUTPUT) -->
+              <tr class="bg-amber-950/15">
+                <td class="py-3 px-4 font-sans font-bold text-amber-300 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-sm bg-amber-400 flex-shrink-0"></span>
+                  <span>Ram Area</span>
+                </td>
+                <td class="py-3 px-3 text-center text-xs text-amber-300">cm²</td>
+                <td id="cmpRamAreaA" class="py-3 px-4 border-l border-slate-800 font-bold text-amber-200">1734.07</td>
+                <td id="cmpRamAreaB" class="py-3 px-4 border-l border-slate-800 font-bold text-amber-200">490.63</td>
+                <td id="cmpDeltaRamArea" class="py-3 px-4 border-l border-slate-800 text-xs text-amber-300">+1243.44 cm² (3.53×)</td>
+              </tr>
+
+              <!-- ROW 5: Hydraulic Pressure Kg/cm² (GREEN INPUT) -->
+              <tr class="bg-emerald-950/20">
+                <td class="py-3 px-4 font-sans font-bold text-emerald-300 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-sm bg-emerald-500 flex-shrink-0"></span>
+                  <span>Hydraulic Pressure</span>
+                </td>
+                <td class="py-3 px-3 text-center text-xs text-emerald-300 font-bold">Kg/cm²</td>
+                <td class="py-2.5 px-4 border-l border-slate-800">
+                  <input id="cmpHydA" type="number" step="any" value="210" oninput="updateComparisonView()"
+                    class="w-full bg-slate-950 border border-emerald-500/50 rounded-lg px-3 py-1.5 text-emerald-300 font-bold focus:outline-none focus:border-emerald-400" />
+                </td>
+                <td class="py-2.5 px-4 border-l border-slate-800">
+                  <input id="cmpHydB" type="number" step="any" value="210" oninput="updateComparisonView()"
+                    class="w-full bg-slate-950 border border-emerald-500/50 rounded-lg px-3 py-1.5 text-emerald-300 font-bold focus:outline-none focus:border-emerald-400" />
+                </td>
+                <td id="cmpDeltaHyd" class="py-2.5 px-4 border-l border-slate-800 text-xs text-slate-300">
+                  0 Kg/cm²
+                </td>
+              </tr>
+
+              <!-- ROW 6: Hydraulic Pressure PSI (YELLOW OUTPUT) -->
+              <tr class="bg-amber-950/15">
+                <td class="py-3 px-4 font-sans font-bold text-amber-300 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-sm bg-amber-400 flex-shrink-0"></span>
+                  <span>Hydraulic Pressure</span>
+                </td>
+                <td class="py-3 px-3 text-center text-xs text-amber-300">PSI</td>
+                <td id="cmpPsiA" class="py-3 px-4 border-l border-slate-800 font-bold text-amber-200">2986.91</td>
+                <td id="cmpPsiB" class="py-3 px-4 border-l border-slate-800 font-bold text-amber-200">2986.91</td>
+                <td class="py-3 px-4 border-l border-slate-800 text-xs text-slate-400">= Kg/cm² × 14.2234</td>
+              </tr>
+
+              <!-- ROW 7: Machine Tonnage (YELLOW OUTPUT) -->
+              <tr class="bg-amber-500/15 border-y border-amber-500/30">
+                <td class="py-3.5 px-4 font-sans font-extrabold text-amber-300 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-sm bg-amber-400 flex-shrink-0"></span>
+                  <span>Machine Tonnage</span>
+                </td>
+                <td class="py-3.5 px-3 text-center text-xs font-bold text-amber-300">Ton</td>
+                <td id="cmpTonA" class="py-3.5 px-4 border-l border-slate-800 text-lg font-extrabold text-white">364.15</td>
+                <td id="cmpTonB" class="py-3.5 px-4 border-l border-slate-800 text-lg font-extrabold text-white">103.03</td>
+                <td id="cmpDeltaTon" class="py-3.5 px-4 border-l border-slate-800 text-xs font-bold text-amber-300">
+                  +261.12 Ton (3.53×)
+                </td>
+              </tr>
+
+              <!-- ROW 8: Mould Plate Width (GREEN INPUT) -->
+              <tr class="bg-emerald-950/20">
+                <td class="py-3 px-4 font-sans font-bold text-emerald-300 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-sm bg-emerald-500 flex-shrink-0"></span>
+                  <span>Mould Plate Width</span>
+                </td>
+                <td class="py-3 px-3 text-center text-xs text-emerald-300 font-bold">mm</td>
+                <td class="py-2.5 px-4 border-l border-slate-800">
+                  <input id="cmpWidthA" type="number" step="any" value="700" oninput="updateComparisonView()"
+                    class="w-full bg-slate-950 border border-emerald-500/50 rounded-lg px-3 py-1.5 text-emerald-300 font-bold focus:outline-none focus:border-emerald-400" />
+                </td>
+                <td class="py-2.5 px-4 border-l border-slate-800">
+                  <input id="cmpWidthB" type="number" step="any" value="700" oninput="updateComparisonView()"
+                    class="w-full bg-slate-950 border border-emerald-500/50 rounded-lg px-3 py-1.5 text-emerald-300 font-bold focus:outline-none focus:border-emerald-400" />
+                </td>
+                <td class="py-2.5 px-4 border-l border-slate-800 text-xs text-slate-400">Mould W</td>
+              </tr>
+
+              <!-- ROW 9: Mould Plate Length (GREEN INPUT) -->
+              <tr class="bg-emerald-950/20">
+                <td class="py-3 px-4 font-sans font-bold text-emerald-300 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-sm bg-emerald-500 flex-shrink-0"></span>
+                  <span>Mould Plate Length</span>
+                </td>
+                <td class="py-3 px-3 text-center text-xs text-emerald-300 font-bold">mm</td>
+                <td class="py-2.5 px-4 border-l border-slate-800">
+                  <input id="cmpLengthA" type="number" step="any" value="700" oninput="updateComparisonView()"
+                    class="w-full bg-slate-950 border border-emerald-500/50 rounded-lg px-3 py-1.5 text-emerald-300 font-bold focus:outline-none focus:border-emerald-400" />
+                </td>
+                <td class="py-2.5 px-4 border-l border-slate-800">
+                  <input id="cmpLengthB" type="number" step="any" value="700" oninput="updateComparisonView()"
+                    class="w-full bg-slate-950 border border-emerald-500/50 rounded-lg px-3 py-1.5 text-emerald-300 font-bold focus:outline-none focus:border-emerald-400" />
+                </td>
+                <td class="py-2.5 px-4 border-l border-slate-800 text-xs text-slate-400">Mould L</td>
+              </tr>
+
+              <!-- ROW 10: Platen Area / Mould Area (YELLOW OUTPUT) -->
+              <tr class="bg-amber-950/15">
+                <td class="py-3 px-4 font-sans font-bold text-amber-300 flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-sm bg-amber-400 flex-shrink-0"></span>
+                  <span>Platen Area / Mould Area</span>
+                </td>
+                <td class="py-3 px-3 text-center text-xs text-amber-300">cm²</td>
+                <td id="cmpPlatenA" class="py-3 px-4 border-l border-slate-800 font-bold text-amber-200">4900</td>
+                <td id="cmpPlatenB" class="py-3 px-4 border-l border-slate-800 font-bold text-amber-200">4900</td>
+                <td id="cmpDeltaPlaten" class="py-3 px-4 border-l border-slate-800 text-xs text-slate-400">= W × L / 100</td>
+              </tr>
+
+              <!-- ROW 11: Pressure on Mould (YELLOW HERO OUTPUT) -->
+              <tr class="bg-amber-500/20 border-t-2 border-amber-400/50">
+                <td class="py-4 px-4 font-sans font-extrabold text-amber-300 flex items-center gap-2">
+                  <span class="w-3 h-3 rounded-sm bg-amber-400 flex-shrink-0 shadow shadow-amber-400/50"></span>
+                  <span>Pressure on Mould</span>
+                </td>
+                <td class="py-4 px-3 text-center text-xs font-extrabold text-amber-300">Kg/cm²</td>
+                <td id="cmpMouldPresA" class="py-4 px-4 border-l border-slate-800 text-xl font-extrabold text-amber-300">74.32</td>
+                <td id="cmpMouldPresB" class="py-4 px-4 border-l border-slate-800 text-xl font-extrabold text-amber-300">21.03</td>
+                <td id="cmpDeltaMouldPres" class="py-4 px-4 border-l border-slate-800 text-xs font-extrabold text-emerald-300">
+                  +53.29 Kg/cm² (3.53×)
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- VIEW 3: REVERSE CALCULATOR (TARGET MOULD PRESSURE -> HYDRAULIC GAUGE) -->
+    <!-- ===================================================================== -->
+    <section id="view-reverse" class="hidden space-y-5">
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+        <!-- LEFT: REVERSE TARGET INPUTS (GREEN) -->
+        <div class="lg:col-span-5 bg-slate-900 border-2 border-emerald-500/40 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+          <div class="border-b border-emerald-500/20 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="w-3 h-3 rounded bg-emerald-500"></span>
+              <h2 class="text-sm sm:text-base font-extrabold text-white uppercase tracking-wide">
+                Reverse Target Parameters
+              </h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-1">
+              Enter your desired clamping pressure on the mould (or target tonnage) to find the exact hydraulic gauge pressure to set on the machine.
+            </p>
+          </div>
+
+          <!-- Toggle Target Mode: Target Mould Pressure vs Target Tonnage -->
+          <div class="grid grid-cols-2 gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button type="button" id="revModeMouldBtn" onclick="setReverseMode('mouldPressure')"
+              class="py-2 px-2 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition">
+              By Target Mould Pressure
+            </button>
+            <button type="button" id="revModeTonnageBtn" onclick="setReverseMode('tonnage')"
+              class="py-2 px-2 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition">
+              By Target Tonnage
+            </button>
+          </div>
+
+          <!-- Target Mould Pressure Input (Default visible) -->
+          <div id="revTargetPressureBox" class="bg-emerald-950/25 border border-emerald-500/30 rounded-xl p-3.5 space-y-2">
+            <div class="flex items-center justify-between">
+              <label for="revInpTargetPressure" class="text-xs font-bold uppercase text-emerald-300">
+                Target Pressure on Mould
+              </label>
+              <span class="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">Kg/cm²</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="stepReverseInput('revInpTargetPressure', -5)" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 font-mono text-xs font-bold">-5</button>
+              <input id="revInpTargetPressure" type="number" step="any" value="74.32" oninput="updateReverseCalculation()"
+                class="w-full text-center bg-slate-950 border-2 border-emerald-500/50 rounded-xl py-2 text-xl font-mono font-extrabold text-emerald-300 focus:outline-none" />
+              <button type="button" onclick="stepReverseInput('revInpTargetPressure', 5)" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 font-mono text-xs font-bold">+5</button>
+            </div>
+          </div>
+
+          <!-- Target Machine Tonnage Input (Hidden by default) -->
+          <div id="revTargetTonnageBox" class="hidden bg-emerald-950/25 border border-emerald-500/30 rounded-xl p-3.5 space-y-2">
+            <div class="flex items-center justify-between">
+              <label for="revInpTargetTonnage" class="text-xs font-bold uppercase text-emerald-300">
+                Target Machine Tonnage
+              </label>
+              <span class="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">Metric Ton</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="stepReverseInput('revInpTargetTonnage', -10)" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 font-mono text-xs font-bold">-10</button>
+              <input id="revInpTargetTonnage" type="number" step="any" value="364.15" oninput="updateReverseCalculation()"
+                class="w-full text-center bg-slate-950 border-2 border-emerald-500/50 rounded-xl py-2 text-xl font-mono font-extrabold text-emerald-300 focus:outline-none" />
+              <button type="button" onclick="stepReverseInput('revInpTargetTonnage', 10)" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 font-mono text-xs font-bold">+10</button>
+            </div>
+          </div>
+
+          <!-- Machine Ram Diameter -->
+          <div class="bg-emerald-950/25 border border-emerald-500/30 rounded-xl p-3.5 space-y-2">
+            <div class="flex items-center justify-between">
+              <label for="revInpRamDia" class="text-xs font-bold uppercase text-emerald-300">
+                Machine Ram Diameter
+              </label>
+              <span class="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">mm</span>
+            </div>
+            <input id="revInpRamDia" type="number" step="any" value="470" oninput="updateReverseCalculation()"
+              class="w-full text-center bg-slate-950 border-2 border-emerald-500/50 rounded-xl py-2 text-lg font-mono font-extrabold text-emerald-300 focus:outline-none" />
+            <div class="flex gap-1.5 pt-1">
+              <button type="button" onclick="document.getElementById('revInpRamDia').value=250;updateReverseCalculation();" class="flex-1 text-xs font-mono py-1 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 transition">Use 250mm Ram</button>
+              <button type="button" onclick="document.getElementById('revInpRamDia').value=470;updateReverseCalculation();" class="flex-1 text-xs font-mono py-1 rounded bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 transition">Use 470mm Ram</button>
+            </div>
+          </div>
+
+          <!-- Mould Plate Width & Length -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-emerald-950/25 border border-emerald-500/30 rounded-xl p-3 space-y-1.5">
+              <label for="revInpWidth" class="text-[11px] font-bold uppercase text-emerald-300 block">Mould Width (mm)</label>
+              <input id="revInpWidth" type="number" step="any" value="700" oninput="updateReverseCalculation()"
+                class="w-full text-center bg-slate-950 border border-emerald-500/50 rounded-lg py-1.5 text-base font-mono font-bold text-emerald-300 focus:outline-none" />
+            </div>
+            <div class="bg-emerald-950/25 border border-emerald-500/30 rounded-xl p-3 space-y-1.5">
+              <label for="revInpLength" class="text-[11px] font-bold uppercase text-emerald-300 block">Mould Length (mm)</label>
+              <input id="revInpLength" type="number" step="any" value="700" oninput="updateReverseCalculation()"
+                class="w-full text-center bg-slate-950 border border-emerald-500/50 rounded-lg py-1.5 text-base font-mono font-bold text-emerald-300 focus:outline-none" />
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: REQUIRED HYDRAULIC LINE PRESSURE READOUT (YELLOW) -->
+        <div class="lg:col-span-7 bg-slate-900 border-2 border-amber-500/45 rounded-2xl p-4 sm:p-6 shadow-xl space-y-5">
+          <div class="flex items-center justify-between border-b border-amber-500/20 pb-3">
+            <div class="flex items-center gap-2.5">
+              <span class="w-3.5 h-3.5 rounded bg-amber-400"></span>
+              <div>
+                <h2 class="text-sm sm:text-base font-extrabold text-white uppercase tracking-wide">
+                  Required Hydraulic Gauge Setting
+                </h2>
+                <p class="text-[11px] text-amber-400">Back-calculated relief valve / gauge pressure</p>
+              </div>
+            </div>
+            <span id="revSafetyBadge" class="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              Safe Line Pressure
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Required Kg/cm² -->
+            <div class="bg-gradient-to-br from-amber-500/20 to-slate-950 border-2 border-amber-400 rounded-2xl p-4">
+              <span class="text-xs font-bold uppercase text-amber-300">Set Hydraulic Pressure (Kg/cm²)</span>
+              <div class="my-2 flex items-baseline gap-2">
+                <span id="revOutHydKg" class="text-4xl font-mono font-extrabold text-amber-300">210.01</span>
+                <span class="text-xs font-mono text-slate-300">Kg/cm²</span>
+              </div>
+              <p class="text-[11px] font-mono text-slate-400">
+                Exact: <span id="revOutHydKgExact" class="text-slate-200">210.008275</span> Kg/cm²
+              </p>
+            </div>
+
+            <!-- Required PSI -->
+            <div class="bg-gradient-to-br from-amber-500/10 to-slate-950 border-2 border-amber-500/40 rounded-2xl p-4">
+              <span class="text-xs font-bold uppercase text-amber-300">Set Hydraulic Pressure (PSI)</span>
+              <div class="my-2 flex items-baseline gap-2">
+                <span id="revOutHydPsi" class="text-4xl font-mono font-extrabold text-white">2987.03</span>
+                <span class="text-xs font-mono text-amber-300">PSI</span>
+              </div>
+              <p class="text-[11px] font-mono text-slate-400">
+                Bar Equivalent: <span id="revOutHydBar" class="text-slate-200">205.95 bar</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Secondary Reverse Outputs -->
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
+              <span class="text-[11px] text-slate-400 block">Resulting Tonnage</span>
+              <strong id="revOutTonnage" class="text-lg font-mono text-amber-300">364.17 Ton</strong>
+            </div>
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">              <span class="text-[11px] text-slate-400 block">Resulting Mould Pres.</span>
+              <strong id="revOutMouldPres" class="text-lg font-mono text-amber-300">74.32 Kg/cm²</strong>
+            </div>
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-3">
+              <span class="text-[11px] text-slate-400 block">Ram Area</span>
+              <strong id="revOutRamArea" class="text-lg font-mono text-amber-300">1734.07 cm²</strong>
+            </div>
+          </div>
+
+          <!-- Over-pressure Warning Box (Dynamic) -->
+          <div id="revWarningBanner" class="hidden hazard-stripe bg-rose-950/60 border-2 border-rose-500/60 rounded-xl p-3.5 text-xs text-rose-200 flex items-start gap-3">
+            <i class="fa-solid fa-triangle-exclamation text-rose-400 text-lg mt-0.5"></i>
+            <div>
+              <strong class="font-bold text-rose-300 block uppercase">High Line Pressure Alert (> 240 Kg/cm²)</strong>
+              <span id="revWarningText">
+                The required hydraulic pressure exceeds typical 210–240 Kg/cm² shop-floor relief valve limits. Consider moving this mould to a machine with a larger Ram Diameter (such as 470mm).
+              </span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="mt-auto border-t border-slate-900 bg-slate-950 py-4 px-4 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-slate-300">CLAMPON</span>
+        <span>•</span>
+        <span>Engineered for <strong class="text-emerald-400">Polyelastica</strong> Shop-Floor Operations</span>
+      </div>
+      <div class="font-mono text-[11px] text-slate-400">
+        1 Kg/cm² = 14.2234 PSI • Tonnage = (Ram Area × Hyd. Pressure) / 1000
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 1: ADD CUSTOM MACHINE PRESET                                    -->
+  <!-- ===================================================================== -->
+  <div id="addMachineModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+          <i class="fa-solid fa-plus-circle text-emerald-400"></i>
+          <span>Add Shop-Floor Machine Preset</span>
+        </h3>
+        <button onclick="closeModal('addMachineModal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="font-bold text-slate-300 block mb-1">Machine Name / Code (e.g., FM2, Press-04)</label>
+          <input id="modalMachineName" type="text" placeholder="FM2"
+            class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-mono font-bold text-white focus:border-emerald-400 focus:outline-none" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-300 block mb-1">Ram Diameter (mm)</label>
+            <input id="modalRamDia" type="number" value="350"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-mono font-bold text-emerald-300 focus:border-emerald-400 focus:outline-none" />
+          </div>
+          <div>
+            <label class="font-bold text-slate-300 block mb-1">Default Line Kg/cm²</label>
+            <input id="modalHydPres" type="number" value="210"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-mono font-bold text-emerald-300 focus:border-emerald-400 focus:outline-none" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="font-bold text-slate-300 block mb-1">Default Mould W (mm)</label>
+            <input id="modalMouldW" type="number" value="700"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-mono font-bold text-slate-200 focus:border-emerald-400 focus:outline-none" />
+          </div>
+          <div>
+            <label class="font-bold text-slate-300 block mb-1">Default Mould L (mm)</label>
+            <input id="modalMouldL" type="number" value="700"
+              class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2.5 text-sm font-mono font-bold text-slate-200 focus:border-emerald-400 focus:outline-none" />
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button onclick="closeModal('addMachineModal')"
+          class="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">Cancel</button>
+        <button onclick="saveNewMachinePreset()"
+          class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold">Save Machine</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 2: GITHUB + VERCEL + ANTIGRAVITY + PLAY STORE DEPLOY GUIDE      -->
+  <!-- ===================================================================== -->
+  <div id="deployModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
+            <i class="fa-solid fa-rocket text-indigo-400"></i>
+            <span>How to Publish Clampon (Vercel, GitHub, Antigravity & Play Store)</span>
+          </h3>
+          <p class="text-xs text-slate-400">No need to connect credentials inside this chat — follow these 3 fast steps</p>
+        </div>
+        <button onclick="closeModal('deployModal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs leading-relaxed text-slate-300">
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
+          <div class="font-bold text-emerald-400 uppercase tracking-wider">Step 1: Save or Open in Google Antigravity / VS Code</div>
+          <p>
+            Copy or download this single file as <code class="text-amber-300 font-mono">index.html</code> inside a new folder named <code class="text-amber-300 font-mono">clampon</code>. If you use <strong>Antigravity</strong>, open that folder as a workspace—its built-in terminal and Git panel can push directly to GitHub or deploy via the Vercel CLI (<code class="text-amber-300 font-mono">npx vercel --prod</code>).
+          </p>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
+          <div class="font-bold text-amber-400 uppercase tracking-wider">Step 2: Push to GitHub & Connect Vercel (Free Live URL)</div>
+          <p>
+            1. Create a repository named <code class="text-amber-300 font-mono">clampon</code> on your GitHub account and upload <code class="text-amber-300 font-mono">index.html</code>.<br/>
+            2. Log into <strong>Vercel.com</strong> → Click <strong>"Add New Project"</strong> → Import your <code class="text-amber-300 font-mono">clampon</code> GitHub repository → Click <strong>Deploy</strong>.<br/>
+            3. In 15 seconds, you will get a live HTTPS URL (e.g., <code class="text-emerald-300 font-mono">https://clampon.vercel.app</code>) that works on every shop-floor phone.
+          </p>
+        </div>
+
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-1.5">
+          <div class="font-bold text-indigo-400 uppercase tracking-wider">Step 3: Convert Live Vercel URL to Google Play Store (.aab)</div>
+          <p>
+            Once your Vercel link is live, paste your <code class="text-emerald-300 font-mono">https://clampon.vercel.app</code> URL into <strong>PWABuilder.com</strong> and click <strong>Package for Store → Android</strong>. It generates your signed <code class="text-amber-300 font-mono">.aab</code> bundle and asset links ready for your Google Play Console account!
+          </p>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button onclick="closeModal('deployModal')"
+          class="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 text-xs font-extrabold">Got It</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOM TOAST NOTIFICATION BANNER (NO ALERT() USED) -->
+  <div id="toastBanner" class="fixed bottom-5 right-5 z-50 hidden transform transition-all duration-300">
+    <div class="bg-slate-900 border-2 border-emerald-500 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-xs font-bold">
+      <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+      <span id="toastMessage">Copied to clipboard!</span>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- APPLICATION JAVASCRIPT ENGINE                                         -->
+  <!-- ===================================================================== -->
+  <script>
+    // --- APPLICATION STATE ---
+    let useExactExcelPi = true; // true = 3.14 (matches Clampon.xlsx 100%), false = Math.PI
+    let useFullPrecision = false; // false = 2 decimals, true = up to 6 decimals
+    let reverseCalcMode = 'mouldPressure'; // 'mouldPressure' | 'tonnage'
+    let isDaylightTheme = false;
+
+    // Default Machine Presets matching Clampon.xlsx
+    const DEFAULT_MACHINES = [
+      { id: 'fm1-470', name: 'FM1', label: 'FM1 (470mm Ram)', ramDia: 470, hydPres: 210, mouldW: 700, mouldL: 700, isDefault: true },
+      { id: 'fm1-250', name: 'FM1', label: 'FM1 (250mm Ram)', ramDia: 250, hydPres: 210, mouldW: 700, mouldL: 700, isDefault: true },
+      { id: 'fm2-350', name: 'FM2', label: 'FM2 (350mm Ram)', ramDia: 350, hydPres: 210, mouldW: 600, mouldL: 600, isDefault: true }
+    ];
+
+    let savedMachines = [];
+    let activePresetId = 'fm1-470';
+    let shiftHistory = [];
+
+    // --- CORE FORMULA ENGINE (MATCHES CLAMPON.XLSX 100%) ---
+    function getPi() {
+      return useExactExcelPi ? 3.14 : Math.PI;
+    }
+
+    function calculateClamponMetrics(ramDiaMM, hydPresKgCm2, mouldWidthMM, mouldLengthMM) {
+      const pi = getPi();
+      const D = Math.max(0, parseFloat(ramDiaMM) || 0);
+      const P_hyd = Math.max(0, parseFloat(hydPresKgCm2) || 0);
+      const W = Math.max(0, parseFloat(mouldWidthMM) || 0);
+      const L = Math.max(0, parseFloat(mouldLengthMM) || 0);
+
+      // Row 5: Ram Radius (mm) = D / 2
+      const ramRadiusMM = D / 2;
+
+      // Row 6: Ram Area (cm²) = 3.14 * R * R / 100
+      const ramAreaCm2 = (pi * ramRadiusMM * ramRadiusMM) / 100;
+
+      // Row 8: Hydraulic Pressure (PSI) = P_hyd * 14.2234
+      const hydPressurePSI = P_hyd * 14.2234;
+
+      // Row 9: Machine Tonnage (Ton) = Ram Area * P_hyd / 1000
+      const machineTonnage = (ramAreaCm2 * P_hyd) / 1000;
+
+      // Row 12: Platen Area / Mould Area (cm²) = W * L / 100
+      const platenAreaCm2 = (W * L) / 100;
+
+      // Row 13: Pressure on Mould (Kg/cm²) = Machine Tonnage * 1000 / Platen Area
+      const pressureOnMouldKgCm2 = platenAreaCm2 > 0 ? (machineTonnage * 1000) / platenAreaCm2 : 0;
+
+      return {
+        ramDiaMM: D,
+        hydPresKgCm2: P_hyd,
+        mouldWidthMM: W,
+        mouldLengthMM: L,
+        ramRadiusMM,
+        ramAreaCm2,
+        hydPressurePSI,
+        machineTonnage,
+        platenAreaCm2,
+        pressureOnMouldKgCm2
+      };
+    }
+
+    // Format helper based on precision mode
+    function fmtNum(val, forceFull = false) {
+      if (!isFinite(val)) return '0';
+      if (forceFull || useFullPrecision) {
+        // Up to 6 decimal places without trailing zeros
+        return parseFloat(val.toFixed(6)).toString();
+      }
+      // Clean integer if whole number, otherwise 2 decimals
+      if (Math.abs(val - Math.round(val)) < 1e-9) {
+        return Math.round(val).toString();
+      }
+      return val.toFixed(2);
+    }
+
+    // --- UPDATE SINGLE MACHINE CALCULATOR VIEW ---
+    function updateSingleCalculation() {
+      const machineName = document.getElementById('inpMachineName').value || 'FM1';
+      const ramDia = parseFloat(document.getElementById('inpRamDia').value) || 0;
+      const hydPres = parseFloat(document.getElementById('inpHydPressure').value) || 0;
+      const mouldW = parseFloat(document.getElementById('inpMouldWidth').value) || 0;
+      const mouldL = parseFloat(document.getElementById('inpMouldLength').value) || 0;
+
+      const res = calculateClamponMetrics(ramDia, hydPres, mouldW, mouldL);
+
+      // Hero Outputs
+      document.getElementById('outMouldPressure').textContent = fmtNum(res.pressureOnMouldKgCm2);
+      document.getElementById('outMouldPressureExact').textContent = fmtNum(res.pressureOnMouldKgCm2, true) + ' Kg/cm²';
+
+      document.getElementById('outTonnage').textContent = fmtNum(res.machineTonnage);
+      document.getElementById('outTonnageExact').textContent = fmtNum(res.machineTonnage, true) + ' Ton';
+      document.getElementById('outForceKN').textContent = Math.round(res.machineTonnage * 9.80665).toLocaleString() + ' kN';
+
+      // Secondary Outputs
+      document.getElementById('outRamRadius').textContent = fmtNum(res.ramRadiusMM);
+      document.getElementById('outRamArea').textContent = fmtNum(res.ramAreaCm2);
+      document.getElementById('outHydPSI').textContent = fmtNum(res.hydPressurePSI);
+      document.getElementById('outPlatenArea').textContent = fmtNum(res.platenAreaCm2);
+
+      // Status Badge & Gauge Bars
+      const badge = document.getElementById('mouldPressureStatusBadge');
+      if (res.pressureOnMouldKgCm2 < 25) {
+        badge.textContent = 'Low Mould Pressure';
+        badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+      } else if (res.pressureOnMouldKgCm2 <= 120) {
+        badge.textContent = 'Optimal Clamping';
+        badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+      } else {
+        badge.textContent = 'High Platen Load';
+        badge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30';
+      }
+
+      const mouldGaugePct = Math.min(100, Math.max(5, (res.pressureOnMouldKgCm2 / 140) * 100));
+      document.getElementById('gaugeMouldPressure').style.width = mouldGaugePct + '%';
+
+      const tonGaugePct = Math.min(100, Math.max(5, (res.machineTonnage / 500) * 100));
+      document.getElementById('gaugeTonnage').style.width = tonGaugePct + '%';
+
+      // Update Interactive SVG Footprint Visualizer
+      updateFootprintSvg(res);
+    }
+
+    function updateFootprintSvg(res) {
+      const maxDim = Math.max(res.mouldWidthMM, res.mouldLengthMM, res.ramDiaMM, 100);
+      const scale = 116 / maxDim;
+
+      const rectW = Math.max(20, res.mouldWidthMM * scale);
+      const rectH = Math.max(20, res.mouldLengthMM * scale);
+      const rectX = 80 - rectW / 2;
+      const rectY = 80 - rectH / 2;
+
+      const mouldRect = document.getElementById('svgMouldRect');
+      mouldRect.setAttribute('x', rectX.toFixed(1));
+      mouldRect.setAttribute('y', rectY.toFixed(1));
+      mouldRect.setAttribute('width', rectW.toFixed(1));
+      mouldRect.setAttribute('height', rectH.toFixed(1));
+
+      const circleR = Math.max(8, (res.ramDiaMM / 2) * scale);
+      const ramCircle = document.getElementById('svgRamCircle');
+      ramCircle.setAttribute('r', circleR.toFixed(1));
+
+      const areaCoveragePct = res.platenAreaCm2 > 0 ? (res.ramAreaCm2 / res.platenAreaCm2) * 100 : 0;
+      const stepRatio = res.platenAreaCm2 > 0 ? (res.ramAreaCm2 / res.platenAreaCm2) : 0;
+      const mpaValue = res.pressureOnMouldKgCm2 * 0.0980665;
+
+      document.getElementById('areaRatioBadge').textContent = `Ram covers ${areaCoveragePct.toFixed(1)}% of Mould`;
+      document.getElementById('vizRamText').textContent = `Ø${res.ramDiaMM} mm`;
+      document.getElementById('vizMouldText').textContent = `${res.mouldWidthMM} × ${res.mouldLengthMM} mm`;
+      document.getElementById('vizPlatenAreaText').textContent = `${fmtNum(res.platenAreaCm2)} cm²`;
+      document.getElementById('vizRamAreaText').textContent = `${fmtNum(res.ramAreaCm2)} cm²`;
+      document.getElementById('vizPressureStepRatio').textContent = `${stepRatio.toFixed(3)}× Line`;
+      document.getElementById('vizMPaLoad').textContent = `${mpaValue.toFixed(2)} MPa`;
+    }
+
+    // --- UPDATE SIDE-BY-SIDE COMPARISON VIEW (EXCEL SHEET VIEW) ---
+    function updateComparisonView() {
+      const diaA = parseFloat(document.getElementById('cmpRamDiaA').value) || 0;
+      const hydA = parseFloat(document.getElementById('cmpHydA').value) || 0;
+      const wA = parseFloat(document.getElementById('cmpWidthA').value) || 0;
+      const lA = parseFloat(document.getElementById('cmpLengthA').value) || 0;
+
+      const diaB = parseFloat(document.getElementById('cmpRamDiaB').value) || 0;
+      const hydB = parseFloat(document.getElementById('cmpHydB').value) || 0;
+      const wB = parseFloat(document.getElementById('cmpWidthB').value) || 0;
+      const lB = parseFloat(document.getElementById('cmpLengthB').value) || 0;
+
+      const a = calculateClamponMetrics(diaA, hydA, wA, lA);
+      const b = calculateClamponMetrics(diaB, hydB, wB, lB);
+
+      document.getElementById('cmpRamRadiusA').textContent = fmtNum(a.ramRadiusMM);
+      document.getElementById('cmpRamRadiusB').textContent = fmtNum(b.ramRadiusMM);
+
+      document.getElementById('cmpRamAreaA').textContent = fmtNum(a.ramAreaCm2);
+      document.getElementById('cmpRamAreaB').textContent = fmtNum(b.ramAreaCm2);
+
+      document.getElementById('cmpPsiA').textContent = fmtNum(a.hydPressurePSI);
+      document.getElementById('cmpPsiB').textContent = fmtNum(b.hydPressurePSI);
+
+      document.getElementById('cmpTonA').textContent = fmtNum(a.machineTonnage);
+      document.getElementById('cmpTonB').textContent = fmtNum(b.machineTonnage);
+
+      document.getElementById('cmpPlatenA').textContent = fmtNum(a.platenAreaCm2);
+      document.getElementById('cmpPlatenB').textContent = fmtNum(b.platenAreaCm2);
+
+      document.getElementById('cmpMouldPresA').textContent = fmtNum(a.pressureOnMouldKgCm2);
+      document.getElementById('cmpMouldPresB').textContent = fmtNum(b.pressureOnMouldKgCm2);
+
+      // Deltas
+      const diffDia = a.ramDiaMM - b.ramDiaMM;
+      document.getElementById('cmpDeltaRamDia').textContent = `${diffDia >= 0 ? '+' : ''}${fmtNum(diffDia)} mm`;
+
+      const diffArea = a.ramAreaCm2 - b.ramAreaCm2;
+      const ratioArea = b.ramAreaCm2 > 0 ? (a.ramAreaCm2 / b.ramAreaCm2).toFixed(2) : '—';
+      document.getElementById('cmpDeltaRamArea').textContent = `${diffArea >= 0 ? '+' : ''}${fmtNum(diffArea)} cm² (${ratioArea}×)`;
+
+      const diffHyd = a.hydPresKgCm2 - b.hydPresKgCm2;
+      document.getElementById('cmpDeltaHyd').textContent = `${diffHyd >= 0 ? '+' : ''}${fmtNum(diffHyd)} Kg/cm²`;
+
+      const diffTon = a.machineTonnage - b.machineTonnage;
+      const ratioTon = b.machineTonnage > 0 ? (a.machineTonnage / b.machineTonnage).toFixed(2) : '—';
+      document.getElementById('cmpDeltaTon').textContent = `${diffTon >= 0 ? '+' : ''}${fmtNum(diffTon)} Ton (${ratioTon}×)`;
+
+      const diffMould = a.pressureOnMouldKgCm2 - b.pressureOnMouldKgCm2;
+      const ratioMould = b.pressureOnMouldKgCm2 > 0 ? (a.pressureOnMouldKgCm2 / b.pressureOnMouldKgCm2).toFixed(2) : '—';
+      document.getElementById('cmpDeltaMouldPres').textContent = `${diffMould >= 0 ? '+' : ''}${fmtNum(diffMould)} Kg/cm² (${ratioMould}×)`;
+    }
+
+    function resetExcelComparison() {
+      document.getElementById('cmpNameA').value = 'FM1';
+      document.getElementById('cmpRamDiaA').value = 470;
+      document.getElementById('cmpHydA').value = 210;
+      document.getElementById('cmpWidthA').value = 700;
+      document.getElementById('cmpLengthA').value = 700;
+
+      document.getElementById('cmpNameB').value = 'FM1';
+      document.getElementById('cmpRamDiaB').value = 250;
+      document.getElementById('cmpHydB').value = 210;
+      document.getElementById('cmpWidthB').value = 700;
+      document.getElementById('cmpLengthB').value = 700;
+
+      updateComparisonView();
+      showToast('Restored exact Clampon.xlsx comparison values');
+    }
+
+    // --- UPDATE REVERSE CALCULATOR VIEW ---
+    function setReverseMode(mode) {
+      reverseCalcMode = mode;
+      const mouldBtn = document.getElementById('revModeMouldBtn');
+      const tonBtn = document.getElementById('revModeTonnageBtn');
+      const presBox = document.getElementById('revTargetPressureBox');
+      const tonBox = document.getElementById('revTargetTonnageBox');
+
+      if (mode === 'mouldPressure') {
+        mouldBtn.className = 'py-2 px-2 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition';
+        tonBtn.className = 'py-2 px-2 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition';
+        presBox.classList.remove('hidden');
+        tonBox.classList.add('hidden');
+      } else {
+        tonBtn.className = 'py-2 px-2 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition';
+        mouldBtn.className = 'py-2 px-2 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition';
+        tonBox.classList.remove('hidden');
+        presBox.classList.add('hidden');
+      }
+      updateReverseCalculation();
+    }
+
+    function updateReverseCalculation() {
+      const pi = getPi();
+      const ramDia = Math.max(1, parseFloat(document.getElementById('revInpRamDia').value) || 470);
+      const mouldW = Math.max(1, parseFloat(document.getElementById('revInpWidth').value) || 700);
+      const mouldL = Math.max(1, parseFloat(document.getElementById('revInpLength').value) || 700);
+
+      const ramRadius = ramDia / 2;
+      const ramAreaCm2 = (pi * ramRadius * ramRadius) / 100;
+      const platenAreaCm2 = (mouldW * mouldL) / 100;
+
+      let requiredTonnage = 0;
+      let resultingMouldPressure = 0;
+
+      if (reverseCalcMode === 'mouldPressure') {
+        resultingMouldPressure = Math.max(0, parseFloat(document.getElementById('revInpTargetPressure').value) || 0);
+        requiredTonnage = (resultingMouldPressure * platenAreaCm2) / 1000;
+      } else {
+        requiredTonnage = Math.max(0, parseFloat(document.getElementById('revInpTargetTonnage').value) || 0);
+        resultingMouldPressure = platenAreaCm2 > 0 ? (requiredTonnage * 1000) / platenAreaCm2 : 0;
+      }
+
+      const requiredHydKgCm2 = ramAreaCm2 > 0 ? (requiredTonnage * 1000) / ramAreaCm2 : 0;
+      const requiredHydPSI = requiredHydKgCm2 * 14.2234;
+      const requiredHydBar = requiredHydKgCm2 * 0.980665;
+
+      document.getElementById('revOutHydKg').textContent = fmtNum(requiredHydKgCm2);
+      document.getElementById('revOutHydKgExact').textContent = fmtNum(requiredHydKgCm2, true);
+      document.getElementById('revOutHydPsi').textContent = fmtNum(requiredHydPSI);
+      document.getElementById('revOutHydBar').textContent = requiredHydBar.toFixed(2) + ' bar';
+
+      document.getElementById('revOutTonnage').textContent = fmtNum(requiredTonnage) + ' Ton';
+      document.getElementById('revOutMouldPres').textContent = fmtNum(resultingMouldPressure) + ' Kg/cm²';
+      document.getElementById('revOutRamArea').textContent = fmtNum(ramAreaCm2) + ' cm²';
+
+      // Safety warning check
+      const safetyBadge = document.getElementById('revSafetyBadge');
+      const warnBanner = document.getElementById('revWarningBanner');
+
+      if (requiredHydKgCm2 > 240) {
+        safetyBadge.textContent = 'Over-Pressure Risk (>240 Kg/cm²)';
+        safetyBadge.className = 'px-3 py-1 rounded-full text-xs font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+        warnBanner.classList.remove('hidden');
+      } else if (requiredHydKgCm2 > 210) {
+        safetyBadge.textContent = 'High Line Pressure (>210 Kg/cm²)';
+        safetyBadge.className = 'px-3 py-1 rounded-full text-xs font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40';
+        warnBanner.classList.add('hidden');
+      } else {
+        safetyBadge.textContent = 'Safe Line Pressure';
+        safetyBadge.className = 'px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+        warnBanner.classList.add('hidden');
+      }
+    }
+
+    // --- UI HELPERS & CONTROLS ---
+    function stepInput(inputId, delta) {
+      const el = document.getElementById(inputId);
+      const current = parseFloat(el.value) || 0;
+      const next = Math.max(1, current + delta);
+      el.value = next;
+      if (inputId === 'inpRamDia') syncSlider('inpRamDia', 'sliderRamDia');
+      if (inputId === 'inpHydPressure') syncSlider('inpHydPressure', 'sliderHydPressure');
+      updateSingleCalculation();
+    }
+
+    function stepReverseInput(inputId, delta) {
+      const el = document.getElementById(inputId);
+      const current = parseFloat(el.value) || 0;
+      el.value = Math.max(1, +(current + delta).toFixed(2));
+      updateReverseCalculation();
+    }
+
+    function setExactValue(inputId, val) {
+      document.getElementById(inputId).value = val;
+      if (inputId === 'inpRamDia') syncSlider('inpRamDia', 'sliderRamDia');
+      if (inputId === 'inpHydPressure') syncSlider('inpHydPressure', 'sliderHydPressure');
+      updateSingleCalculation();
+    }
+
+    function setMouldDimensions(w, l) {
+      document.getElementById('inpMouldWidth').value = w;
+      document.getElementById('inpMouldLength').value = l;
+      updateSingleCalculation();
+    }
+
+    function syncSlider(inputId, sliderId) {
+      const val = parseFloat(document.getElementById(inputId).value) || 0;
+      const slider = document.getElementById(sliderId);
+      if (slider) slider.value = val;
+    }
+
+    function syncInputFromSlider(sliderId, inputId) {
+      const val = document.getElementById(sliderId).value;
+      document.getElementById(inputId).value = val;
+    }
+
+    function resetSingleCalculator() {
+      selectMachinePreset('fm1-470');
+      showToast('Reset to FM1 (470mm Ram @ 210 Kg/cm²)');
+    }
+
+    function togglePiConstant() {
+      useExactExcelPi = !useExactExcelPi;
+      document.getElementById('piToggleLabel').textContent = useExactExcelPi ? '3.14 (Excel)' : '3.1416 (Math.PI)';
+      document.getElementById('activeFormulaPiText').textContent = useExactExcelPi ? 'π = 3.14' : 'π = Math.PI';
+      updateSingleCalculation();
+      updateComparisonView();
+      updateReverseCalculation();
+      showToast(useExactExcelPi ? 'Switched to Excel Exact Pi (3.14)' : 'Switched to Standard Math.PI (3.14159...)');
+    }
+
+    function togglePrecision() {
+      useFullPrecision = !useFullPrecision;
+      document.getElementById('precisionToggleLabel').textContent = useFullPrecision ? 'Full Decimals' : '.00 (2 Dec)';
+      updateSingleCalculation();
+      updateComparisonView();
+      updateReverseCalculation();
+    }
+
+    function switchTab(tabName) {
+      const views = ['calculator', 'compare', 'reverse'];
+      views.forEach(v => {
+        const section = document.getElementById(`view-${v}`);
+        const btn = document.getElementById(`tab-${v}`);
+        if (v === tabName) {
+          section.classList.remove('hidden');
+          btn.className = 'flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition bg-emerald-500 text-slate-950 shadow';
+        } else {
+          section.classList.add('hidden');
+          btn.className = 'flex-1 sm:flex-initial px-3.5 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition text-slate-300 hover:text-white hover:bg-slate-800/60';
+        }
+      });
+    }
+
+    // --- MACHINE PRESETS & LOCALSTORAGE ---
+    function loadSavedMachines() {
+      try {
+        const raw = localStorage.getItem('clampon_machines_v1');
+        const custom = raw ? JSON.parse(raw) : [];
+        savedMachines = [...DEFAULT_MACHINES, ...custom];
+      } catch (e) {
+        savedMachines = [...DEFAULT_MACHINES];
+      }
+      renderMachinePresets();
+    }
+
+    function renderMachinePresets() {
+      const container = document.getElementById('machinePresetsList');
+      container.innerHTML = '';
+
+      savedMachines.forEach(m => {
+        const isActive = m.id === activePresetId;
+        const btn = document.createElement('div');
+        btn.className = `flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold cursor-pointer border transition flex-shrink-0 ${
+          isActive
+            ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/20'
+            : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+        }`;
+        btn.onclick = () => selectMachinePreset(m.id);
+
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = m.label || `${m.name} (${m.ramDia}mm)`;
+        btn.appendChild(labelSpan);
+
+        if (!m.isDefault) {
+          const delBtn = document.createElement('button');
+          delBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+          delBtn.className = 'ml-1 opacity-70 hover:opacity-100 px-1';
+          delBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteCustomMachine(m.id);
+          };
+          btn.appendChild(delBtn);
+        }
+
+        container.appendChild(btn);
+      });
+    }
+
+    function selectMachinePreset(id) {
+      const found = savedMachines.find(m => m.id === id);
+      if (!found) return;
+      activePresetId = id;
+      document.getElementById('inpMachineName').value = found.name;
+      document.getElementById('inpRamDia').value = found.ramDia;
+      document.getElementById('inpHydPressure').value = found.hydPres;
+      document.getElementById('inpMouldWidth').value = found.mouldW;
+      document.getElementById('inpMouldLength').value = found.mouldL;
+
+      syncSlider('inpRamDia', 'sliderRamDia');
+      syncSlider('inpHydPressure', 'sliderHydPressure');
+
+      renderMachinePresets();
+      updateSingleCalculation();
+    }
+
+    function saveNewMachinePreset() {
+      const name = (document.getElementById('modalMachineName').value || 'FM-Custom').trim();
+      const ramDia = parseFloat(document.getElementById('modalRamDia').value) || 350;
+      const hydPres = parseFloat(document.getElementById('modalHydPres').value) || 210;
+      const mouldW = parseFloat(document.getElementById('modalMouldW').value) || 700;
+      const mouldL = parseFloat(document.getElementById('modalMouldL').value) || 700;
+
+      const newMachine = {
+        id: 'custom-' + Date.now(),
+        name,
+        label: `${name} (${ramDia}mm Ram)`,
+        ramDia,
+        hydPres,
+        mouldW,
+        mouldL,
+        isDefault: false
+      };
+
+      try {
+        const raw = localStorage.getItem('clampon_machines_v1');
+        const custom = raw ? JSON.parse(raw) : [];
+        custom.push(newMachine);
+        localStorage.setItem('clampon_machines_v1', JSON.stringify(custom));
+      } catch (e) {}
+
+      closeModal('addMachineModal');
+      loadSavedMachines();
+      selectMachinePreset(newMachine.id);
+      showToast(`Added preset: ${newMachine.label}`);
+    }
+
+    function deleteCustomMachine(id) {
+      try {
+        const raw = localStorage.getItem('clampon_machines_v1');
+        const custom = raw ? JSON.parse(raw) : [];
+        const filtered = custom.filter(m => m.id !== id);
+        localStorage.setItem('clampon_machines_v1', JSON.stringify(filtered));
+      } catch (e) {}
+      if (activePresetId === id) activePresetId = 'fm1-470';
+      loadSavedMachines();
+      selectMachinePreset(activePresetId);
+      showToast('Removed custom machine preset');
+    }
+
+    // --- SHIFT LOG HISTORY ---
+    function loadShiftHistory() {
+      try {
+        const raw = localStorage.getItem('clampon_shift_logs_v1');
+        shiftHistory = raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        shiftHistory = [];
+      }
+      renderShiftHistory();
+    }
+
+    function saveToShiftHistory() {
+      const name = document.getElementById('inpMachineName').value || 'FM1';
+      const ramDia = parseFloat(document.getElementById('inpRamDia').value) || 0;
+      const hydPres = parseFloat(document.getElementById('inpHydPressure').value) || 0;
+      const mouldW = parseFloat(document.getElementById('inpMouldWidth').value) || 0;
+      const mouldL = parseFloat(document.getElementById('inpMouldLength').value) || 0;
+      const res = calculateClamponMetrics(ramDia, hydPres, mouldW, mouldL);
+
+      const entry = {
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        name,
+        ramDia,
+        hydPres,
+        mould: `${mouldW}×${mouldL}`,
+        tonnage: res.machineTonnage.toFixed(2),
+        mouldPres: res.pressureOnMouldKgCm2.toFixed(2)
+      };
+
+      shiftHistory.unshift(entry);
+      if (shiftHistory.length > 8) shiftHistory.pop();
+
+      try {
+        localStorage.setItem('clampon_shift_logs_v1', JSON.stringify(shiftHistory));
+      } catch (e) {}
+
+      renderShiftHistory();
+      showToast('Logged calculation to Shift History');
+    }
+
+    function clearShiftHistory() {
+      shiftHistory = [];
+      try {
+        localStorage.removeItem('clampon_shift_logs_v1');
+      } catch (e) {}
+      renderShiftHistory();
+      showToast('Shift history cleared');
+    }
+
+    function renderShiftHistory() {
+      const container = document.getElementById('shiftLogContainer');
+      if (!shiftHistory.length) {
+        container.innerHTML = `<p class="text-xs text-slate-500 py-2">No shift logs saved yet. Tap "Log Shift" above to record machine setups.</p>`;
+        return;
+      }
+
+      let rows = shiftHistory.map(item => `
+        <tr class="border-b border-slate-800/70 text-xs font-mono">
+          <td class="py-2 px-2 text-slate-400">${item.time}</td>
+          <td class="py-2 px-2 font-bold text-emerald-300">${item.name} (Ø${item.ramDia})</td>
+          <td class="py-2 px-2 text-slate-300">${item.hydPres} Kg/cm²</td>
+          <td class="py-2 px-2 text-slate-300">${item.mould} mm</td>
+          <td class="py-2 px-2 font-bold text-white">${item.tonnage} Ton</td>
+          <td class="py-2 px-2 font-extrabold text-amber-300">${item.mouldPres} Kg/cm²</td>
+        </tr>
+      `).join('');
+
+      container.innerHTML = `
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="text-[10px] font-mono uppercase text-slate-400 border-b border-slate-800">
+              <th class="py-1.5 px-2">Time</th>
+              <th class="py-1.5 px-2">Machine</th>
+              <th class="py-1.5 px-2">Line Pres.</th>
+              <th class="py-1.5 px-2">Mould Size</th>
+              <th class="py-1.5 px-2">Tonnage</th>
+              <th class="py-1.5 px-2">Mould Pres.</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    // --- CLIPBOARD EXPORT (USING document.execCommand('copy')) ---
+    function copyTextToClipboard(text, message) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast(message || 'Copied to clipboard!');
+      } catch (err) {
+        showToast('Copy failed — please select manually');
+      }
+      document.body.removeChild(ta);
+    }
+
+    function copyWhatsAppSummary() {
+      const name = document.getElementById('inpMachineName').value || 'FM1';
+      const ramDia = parseFloat(document.getElementById('inpRamDia').value) || 0;
+      const hydPres = parseFloat(document.getElementById('inpHydPressure').value) || 0;
+      const mouldW = parseFloat(document.getElementById('inpMouldWidth').value) || 0;
+      const mouldL = parseFloat(document.getElementById('inpMouldLength').value) || 0;
+      const r = calculateClamponMetrics(ramDia, hydPres, mouldW, mouldL);
+
+      const text = [
+        `*CLAMPON SHOP-FLOOR REPORT (Polyelastica)*`,
+        `• Machine: ${name} (Ram Ø ${r.ramDiaMM} mm | Radius ${r.ramRadiusMM} mm)`,
+        `• Ram Area: ${r.ramAreaCm2.toFixed(2)} cm²`,
+        `• Hydraulic Pressure: ${r.hydPresKgCm2} Kg/cm² (${r.hydPressurePSI.toFixed(2)} PSI)`,
+        `• *Machine Tonnage: ${r.machineTonnage.toFixed(2)} Ton*`,
+        `• Mould Size: ${r.mouldWidthMM} × ${r.mouldLengthMM} mm (${r.platenAreaCm2} cm²)`,
+        `• *Pressure on Mould: ${r.pressureOnMouldKgCm2.toFixed(2)} Kg/cm²*`
+      ].join('\n');
+
+      copyTextToClipboard(text, 'Shift summary copied for WhatsApp!');
+    }
+
+    function copyExcelComparisonTable() {
+      const nameA = document.getElementById('cmpNameA').value || 'FM1';
+      const nameB = document.getElementById('cmpNameB').value || 'FM1';
+      const a = calculateClamponMetrics(
+        document.getElementById('cmpRamDiaA').value,
+        document.getElementById('cmpHydA').value,
+        document.getElementById('cmpWidthA').value,
+        document.getElementById('cmpLengthA').value
+      );
+      const b = calculateClamponMetrics(
+        document.getElementById('cmpRamDiaB').value,
+        document.getElementById('cmpHydB').value,
+        document.getElementById('cmpWidthB').value,
+        document.getElementById('cmpLengthB').value
+      );
+
+      const text = [
+        `CLAMPON COMPARISON (${nameA} Ø${a.ramDiaMM}mm vs ${nameB} Ø${b.ramDiaMM}mm)`,
+        `Ram Area: ${a.ramAreaCm2.toFixed(2)} cm² vs ${b.ramAreaCm2.toFixed(2)} cm²`,
+        `Hydraulic Pressure: ${a.hydPresKgCm2} Kg/cm² vs ${b.hydPresKgCm2} Kg/cm²`,
+        `Machine Tonnage: ${a.machineTonnage.toFixed(2)} Ton vs ${b.machineTonnage.toFixed(2)} Ton`,
+        `Mould Area: ${a.platenAreaCm2} cm² vs ${b.platenAreaCm2} cm²`,
+        `Pressure on Mould: ${a.pressureOnMouldKgCm2.toFixed(2)} Kg/cm² vs ${b.pressureOnMouldKgCm2.toFixed(2)} Kg/cm²`
+      ].join('\n');
+
+      copyTextToClipboard(text, 'Comparison table copied to clipboard!');
+    }
+
+    // --- MODALS, THEME & TOAST ---
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      document.getElementById('toastMessage').textContent = msg;
+      banner.classList.remove('hidden');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        banner.classList.add('hidden');
+      }, 2800);
+    }
+
+    function toggleTheme() {
+      isDaylightTheme = !isDaylightTheme;
+      const body = document.body;
+      const icon = document.getElementById('themeIcon');
+      if (isDaylightTheme) {
+        body.classList.remove('bg-slate-950');
+        body.classList.add('bg-slate-900');
+        icon.className = 'fa-solid fa-moon text-sm';
+        showToast('High-Contrast Shop Lighting Mode Active');
+      } else {
+        body.classList.add('bg-slate-950');
+        body.classList.remove('bg-slate-900');
+        icon.className = 'fa-solid fa-sun text-sm';
+        showToast('Dark Industrial Mode Active');
+      }
+    }
+
+    // --- INITIALIZE ON LOAD ---
+    window.onload = function () {
+      loadSavedMachines();
+      loadShiftHistory();
+      updateSingleCalculation();
+      updateComparisonView();
+      updateReverseCalculation();
+    };
+  </script>
+</body>
+</html>
